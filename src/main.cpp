@@ -1,19 +1,14 @@
-// test code for mutual communication between Pi and Arduino:
-// Arduino should read (and send) turbidity readings only when the Pi
-// commands it to:
-// the Pi will then send a second command based on the reading
-// which the Arduino will interpret to turn on one of the four channels
-// of the test relay (or, if the reading is wrong, turn off all channels):
-// I'm also going to keep using the sensor smoothing here because if ever
-// there was a time where less noisy readings was important the Turbidity
-// logging is definitly it
+// test code for mutual communication between Raspberry Pi (3B+) and
+// Arduino (Nano Every):
+// see README for more detailed description:
 
 // needed when dealing with Arduino code outside of the Arduino IDE:
 # include <Arduino.h>
 
 // specifying the analog pin for the turbidity sensor:
 # define TURBID1 A1
-// specifying the number of samples to be averaged to smooth sensor readings:
+// specifying the number of samples to be averaged to smooth (average)
+// sensor readings:
 # define NUMSAMPLES 5
 
 // handing the sample number to the sample variables for smoothing:
@@ -30,8 +25,7 @@ void setup() {
   // AREF hooked into the 5V power
   analogReference(EXTERNAL);
 
-  // telling the Arduino that the relay channels will only be receiving
-  // commands, not giving them:
+  // sets up relay channels to receive commands
   pinMode(relay1, OUTPUT);
   pinMode(relay2, OUTPUT);
   pinMode(relay3, OUTPUT);
@@ -58,6 +52,8 @@ void loop() {
     // removing any excess whitespace the Pi might have sent with the command
     command.trim();
 
+    // collecting five turbidity sensor readings (with a delay) to average
+    // to smooth noisy sensor readings
     if (command.equals("turbidread")) {
       samples_t1[NUMSAMPLES] = 0;
       for (i=0; i< NUMSAMPLES; i++) {
@@ -77,13 +73,11 @@ void loop() {
       // voltages (0-5v):
       float voltage_t1 = ave_turb1*(5.0/1023.0);
 
-
       // sending voltage readings to Serial and the Pi:
       Serial.println(voltage_t1);
     }
 
     // opening the appropriate relay channel when the Pi says so:
-      //I believe these realys open when power is LOW, but need to check:
     // opening channel 1 (should occur for plain water):
     if (command.equals("channel1")) {
       digitalWrite(relay1, LOW);
